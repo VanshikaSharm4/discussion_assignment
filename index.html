@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discussion-App</title>
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+        * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    height: 100%;
+    width: 100%;
+}
+
+header {
+    padding: 1em .5em;
+    font-weight: bolder;
+    font-size: 1.5em;
+    background-color: rgb(22, 122, 119);
+    margin-bottom: 20px;
+    text-align: center;
+    color: white;
+}
+
+.container {
+    display: grid;
+    width: 100%;
+    grid-template-columns: 30% 70%;
+    gap: .5em;
+    padding: 20px;
+}
+
+button {
+    padding: .5em;
+    background-color: blue;
+    color: white;
+    font-weight: 600;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+}
+
+.put-question {
+    display: grid;
+    grid-template-rows: 1fr 1fr 3fr;
+    gap: 1em;
+}
+
+/* .put-response {
+    display: none;
+} */
+
+.box {
+    display: flex;
+    gap: .5em;
+}
+
+#question-list > li {
+    list-style-type: none;
+    padding: .5em;
+    margin: .5em 0;
+    background-color: grey;
+    color: white;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+#response-list > li {
+    list-style-type: none;
+    padding: .5em;
+    margin: .5em 0;
+    background-color: lightgray;
+    border-radius: 5px;
+}
+.none{
+    display: none;
+}
+.display{
+    display: block;
+}
+
+@media (max-width: 600px) {
+    .container {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto;
+    }
+}
+    </style>
+</head>
+<body>
+    <header>Discussion Portal</header>
+    <div class="container">
+        <div class="left-panel">
+            <div class="box">
+                <button id="new-question-btn">New Question Form</button>
+                <input type="text" id="search-input" placeholder="Search questions..">
+            </div>
+            <div class="questionBox">
+                <ul id="question-list">
+                    <!-- questions will be previewed here -->
+                </ul>
+            </div>
+        </div>
+        <div class="right-panel">
+            <div class="put-question">
+                <h1>Welcome to Discussion Portal</h1>
+                <p>Enter a subject and question to get started</p>
+                <form id="question-form">
+                    <input id="subject" type="text" name="subject" placeholder="Enter a subject">
+                    <textarea id="question" name="question" placeholder="Question"></textarea>
+                    <button type="submit">Submit</button>
+                </form>
+            </div>
+            <div class="put-response" style="display: none;">
+                <h2 id="question-title">Question</h2>
+                <p id="question-content"></p>
+                <button id="resolve-btn">Resolve</button>
+                <h2>Responses</h2>
+                <ul id="response-list">
+                    <!-- add responses here  -->
+                </ul>
+                <h2>Add Response</h2>
+                <form id="response-form">
+                    <input id="name" type="text" placeholder="Enter Name">
+                    <textarea id="comment" placeholder="Enter Comment" rows="5"></textarea>
+                    <button type="submit">Submit</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
+
+<script>
+const questionList = document.querySelector('#question-list');
+const questionForm = document.querySelector('#question-form');
+const responseForm = document.querySelector('#response-form');
+const responseList = document.querySelector('#response-list');
+const putResponse = document.querySelector('.put-response');
+const questionTitle = document.querySelector('#question-title');
+const questionContent = document.querySelector('#question-content');
+const resolveBtn = document.querySelector('#resolve-btn');
+
+let discussions = [];
+
+// Initialize discussions from localStorage
+if (localStorage.getItem('discussions')) {
+    discussions = JSON.parse(localStorage.getItem('discussions'));
+    renderQuestionList(); // Render any saved discussions
+}
+
+// Event listener for question submission
+questionForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const subject = document.querySelector('#subject').value;
+    const question = document.querySelector('#question').value;
+
+    // Create a new discussion object
+    if (subject && question) {
+        discussions.push({
+            subject: subject,
+            question: question,
+            responses: []
+        });
+        updateLocalStorage(); // Update localStorage whenever a new discussion is added
+        renderQuestionList();
+        // Clear the form inputs
+        document.querySelector('#subject').value = '';
+        document.querySelector('#question').value = '';
+    }
+});
+
+// Render the list of questions
+function renderQuestionList() {
+    questionList.innerHTML = ''; // Clear previous list
+
+    discussions.forEach((discussion, index) => {
+        const li = document.createElement('li');
+        const h2 = document.createElement('h2');
+        const p = document.createElement('p');
+        h2.textContent = discussion.subject;
+        p.textContent = discussion.question;
+        li.appendChild(h2);
+        li.appendChild(p);
+        li.id = index;
+
+        li.addEventListener('click', () => {
+            displayQuestion(index);
+        });
+
+        questionList.appendChild(li);
+    });
+}
+
+// Display the selected question and its responses
+function displayQuestion(index) {
+    const discussion = discussions[index];
+    currentQuestionIndex = index;
+
+    // Display question details
+    questionTitle.textContent = discussion.subject;
+    questionContent.textContent = discussion.question;
+
+    // Display responses
+    renderResponseList(index);
+
+    // Show the response section
+    putResponse.style.display = 'block';
+}
+
+// Render the responses for the selected question
+function renderResponseList(index) {
+    responseList.innerHTML = ''; // Clear previous responses
+    const responses = discussions[index].responses;
+
+    responses.forEach(response => {
+        const li = document.createElement('li');
+        li.textContent = `${response.name}: ${response.comment}`;
+        responseList.appendChild(li);
+    });
+}
+
+// Event listener for response submission
+responseForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = document.querySelector('#name').value;
+    const comment = document.querySelector('#comment').value;
+
+    if (name && comment && currentQuestionIndex !== null) {
+        discussions[currentQuestionIndex].responses.push({
+            name: name,
+            comment: comment
+        });
+        updateLocalStorage(); // Update localStorage whenever a new response is added
+        renderResponseList(currentQuestionIndex);
+        // Clear the form inputs
+        document.querySelector('#name').value = '';
+        document.querySelector('#comment').value = '';
+    }
+});
+
+// Event listener for resolving the question
+resolveBtn.addEventListener('click', () => {
+    if (currentQuestionIndex !== null) {
+        discussions.splice(currentQuestionIndex, 1); // Remove the question
+        updateLocalStorage(); // Update localStorage after removing a question
+        renderQuestionList(); // Re-render the question list
+        putResponse.style.display = 'none'; // Hide the response section
+    }
+});
+
+// Update localStorage whenever the discussions array changes
+function updateLocalStorage() {
+    localStorage.setItem('discussions', JSON.stringify(discussions));
+}
+
+</script>
